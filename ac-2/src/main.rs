@@ -15,30 +15,23 @@ fn main() {
 
     let lines = read_lines(filename).unwrap();
     let v_1: Vec<Rule> = lines
-        .flat_map(|e| e)
+        .filter_map(Result::ok)
         .map(line_to_rule)
         .filter(is_valid_1)
         .collect();
     let lines = read_lines(filename).unwrap();
     let v_2: Vec<Rule> = lines
-        .flat_map(|e| e)
+        .filter_map(Result::ok)
         .map(line_to_rule)
         .filter(is_valid_2)
         .collect();
     println!("part 1: {} valid", v_1.len());
     println!("part 2: {} valid", v_2.len());
-    // for line in lines.into_iter().flat_map(|e| e) {
-    //     let rule = line_to_rule(&line);
-    //     if is_valid_1(&rule) {
-    //         println!("valid according to rule {:?}", rule);
-    //     }
-    // }
     ()
 }
 
-fn line_to_rule<T: AsRef<str>>(line: T) -> Rule {
+fn line_to_rule(line: String) -> Rule {
     let parts: Vec<&str> = line
-        .as_ref()
         .split(|c| c == ':' || c == '-' || c == ' ')
         .filter(|p| !p.is_empty())
         .collect();
