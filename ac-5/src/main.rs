@@ -1,5 +1,4 @@
 use clap::{App, Arg};
-use itertools::max;
 use std::convert::TryFrom;
 use std::fs::File;
 use std::io::prelude::*;
@@ -9,9 +8,14 @@ use std::io::BufReader;
 struct Seat {
     rbits: String,
     cbits: String,
-    row: usize,
-    col: usize,
-    id: usize,
+    row: u32,
+    col: u32,
+}
+
+impl Seat {
+    fn seat_id(&self) -> u32 {
+        self.row * 8 + self.col
+    }
 }
 
 enum SeatError {
@@ -36,14 +40,13 @@ impl TryFrom<String> for Seat {
             })
             .collect();
 
-        let row = usize::from_str_radix(&bits[0..7], 2).unwrap();
-        let col = usize::from_str_radix(&bits[7..10], 2).unwrap();
+        let row = u32::from_str_radix(&bits[0..7], 2).unwrap();
+        let col = u32::from_str_radix(&bits[7..10], 2).unwrap();
         Ok(Seat {
             rbits: (&bits[0..7]).to_string(),
             cbits: (&bits[7..10]).to_string(),
             row: row,
             col: col,
-            id: row * 8 + col,
         })
     }
 }
@@ -68,13 +71,13 @@ fn main() -> std::io::Result<()> {
         .map(Seat::try_from)
         .flat_map(Result::ok)
         .collect();
-    seats.sort_unstable_by_key(|k| k.id);
+    seats.sort_unstable_by_key(|k| k.seat_id());
 
-    let max_seat_id = seats.last().unwrap().id;
-    let min_seat_id = seats.first().unwrap().id;
+    let max_seat_id = seats.last().unwrap().seat_id();
+    let min_seat_id = seats.first().unwrap().seat_id();
     for (base_offset, seat) in seats.iter().enumerate() {
-        let offset = base_offset + min_seat_id;
-        if offset != seat.id {
+        let offset = (base_offset as u32) + min_seat_id;
+        if offset != seat.seat_id() {
             println!("My seat: {}", offset);
             break;
         }
