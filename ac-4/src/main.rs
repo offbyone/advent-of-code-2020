@@ -1,9 +1,10 @@
 #[macro_use]
 extern crate lazy_static;
+use clap::{App, Arg};
 use regex::Regex;
 use std::fs::File;
-use std::io::{self, BufRead, BufReader};
-use std::path::Path;
+use std::io::prelude::*;
+use std::io::BufReader;
 
 fn number_between(v: &str, lower: usize, upper: usize) -> bool {
     match v.parse::<usize>() {
@@ -65,7 +66,7 @@ fn valid_pid(v: &str) -> bool {
     RE.is_match(v)
 }
 
-fn just_valid(v: &str) -> bool {
+fn just_valid(_v: &str) -> bool {
     true
 }
 
@@ -84,54 +85,48 @@ fn valid(field: &str, value: &str) -> bool {
     validator(value)
 }
 
-fn main() {
-    if let Ok(lines) = read_lines("ac-4.txt") {
-        let mut counter: usize = 0;
-        let fields = vec!["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid", "cid"];
-        let mut matches: Vec<&str> = fields.clone();
-        let mut it = lines.flat_map(Result::ok);
+fn main() -> std::io::Result<()> {
+    let args = App::new("ac-4")
+        .arg(
+            Arg::with_name("INPUT")
+                .help("Input file name")
+                .required(true)
+                .index(1)
+                .default_value("ac-4.txt"),
+        )
+        .get_matches();
 
-        loop {
-            match it.next() {
-                Some(line) => {
-                    if line.trim().len() > 0 {
-                        for segment in line.as_str().split(" ") {
-                            let parts: Vec<&str> = segment.split(":").collect();
-                            let key = parts[0];
-                            let value = parts[1];
-                            if valid(key, value) {
-                                // println!("looking for {} in {:?}", key, matches);
-                                let index = matches.iter().position(|k| *k == key).unwrap();
-                                matches.remove(index);
-                            }
-                        }
-                    // println!("line: {}, matches: {:?}", line, matches);
-                    } else {
-                        if matches.len() == 0 || (matches.len() == 1 && matches[0] == "cid") {
-                            counter += 1;
-                        }
-                        matches = fields.clone();
-                        // println!("line: {}, reset matches", line);
-                    }
-                }
-                None => {
-                    if matches.len() == 0 || (matches.len() == 1 && matches[0] == "cid") {
-                        counter += 1;
-                    }
-                    // println!("line: None, reset matches");
-                    break;
+    let file = File::open(args.value_of("INPUT").unwrap())?;
+    let reader = BufReader::new(file);
+
+    let mut counter: usize = 0;
+    let fields = vec!["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid", "cid"];
+    let mut matches: Vec<&str> = fields.clone();
+
+    for line in reader.lines().flat_map(Result::ok) {
+        if line.trim().len() > 0 {
+            for segment in line.as_str().split(" ") {
+                let parts: Vec<&str> = segment.split(":").collect();
+                let key = parts[0];
+                let value = parts[1];
+                if valid(key, value) {
+                    // println!("looking for {} in {:?}", key, matches);
+                    let index = matches.iter().position(|k| *k == key).unwrap();
+                    matches.remove(index);
                 }
             }
+        // println!("line: {}, matches: {:?}", line, matches);
+        } else {
+            if matches.len() == 0 || (matches.len() == 1 && matches[0] == "cid") {
+                counter += 1;
+            }
+            matches = fields.clone();
+            // println!("line: {}, reset matches", line);
         }
-
-        println!("{} valid", counter);
     }
-}
-
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where
-    P: AsRef<Path>,
-{
-    let file = File::open(filename)?;
-    Ok(BufReader::new(file).lines())
+    if matches.len() == 0 || (matches.len() == 1 && matches[0] == "cid") {
+        counter += 1;
+    }
+    println!("{} valid", counter);
+    Ok(())
 }
