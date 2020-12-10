@@ -47,4 +47,30 @@ fn main() {
         .len();
 
     println!("product = {}", diff_1 * diff_3);
+
+    let mut paths_from: Vec<usize> = vec![0; numbers.len()];
+    paths_from[numbers.len() - 1] = 1;
+    for index in (0..numbers.len()).rev().skip(1) {
+        let val = numbers[index];
+        let next_hops: Vec<usize> = (0..3)
+            .map(|r| r + index + 1)
+            .filter(|i| *i < numbers.len())
+            .filter(|i| numbers[*i] - val <= 3)
+            .collect();
+
+        let path_count = next_hops.iter().map(|i| paths_from[*i]).sum();
+        // println!(
+        //     "i={} ({}) -> nh={:?}, p={}",
+        //     index, val, next_hops, path_count
+        // );
+        paths_from[index] = path_count;
+
+        //     .collect::<Vec<_>>()
+        //     .len();
+        // paths_from[index] = paths_from[index + 1] + viable;
+    }
+    // for (i, n) in numbers.iter().enumerate() {
+    //     println!("from: [{}] {} --> {}", i, n, paths_from[i]);
+    // }
+    println!("distinct paths: {}", paths_from[0]);
 }
